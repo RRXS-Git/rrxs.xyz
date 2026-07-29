@@ -49,15 +49,26 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Custom brand colors
-        tech: {
-          100: '#E6F7FF',
-          500: '#1890FF',
-          600: '#096DD9',
+        // Custom brand colors — 千锤百问 Sci-Fi Purple
+        nebula: {
+          50: '#f3e8ff',
+          100: '#e9d5ff',
+          200: '#d8b4fe',
+          300: '#c084fc',
+          400: '#a855f7',
+          500: '#8b5cf6',
+          600: '#7c3aed',
+          700: '#6d28d9',
+          800: '#5b21b6',
+          900: '#4c1d95',
+          950: '#2e1065',
         },
-        accent1: {
-          300: '#B084F5',
-          500: '#9333EA',
+        cosmic: {
+          100: '#ede9fe',
+          300: '#a78bfa',
+          500: '#6366f1',
+          600: '#4f46e5',
+          700: '#4338ca',
         },
       },
       borderRadius: {

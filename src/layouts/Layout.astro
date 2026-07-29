@@ -5,7 +5,7 @@ interface Props {
 	description?: string;
 }
 
-const { title, description = "RRXS 数字绿洲 - 知识与创新的交汇点" } = Astro.props;
+const { title, description = "RRXS / 千锤百问 — 在提问中进化，在进化中答案自现" } = Astro.props;
 ---
 
 <!doctype html>
@@ -28,18 +28,20 @@ const { title, description = "RRXS 数字绿洲 - 知识与创新的交汇点" }
 		<link rel="stylesheet" href="../styles/global.css" />
 	</head>
 	<body class="min-h-full bg-background text-foreground font-sans antialiased">
-		<!-- Background gradient -->
-		<div class="fixed inset-0 bg-gradient-to-br from-tech-100/70 to-accent1-300/20 -z-10" />
-		<div class="fixed inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(24,144,255,0.1),transparent_50%)] -z-10" />
+		<!-- Background Sci-Fi nebula -->
+		<div class="fixed inset-0 bg-gradient-to-br from-nebula-950 via-[#0a0015] to-cosmic-950 -z-10" />
+		<div class="fixed inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(139,92,246,0.15),transparent_50%)] -z-10" />
+		<div class="fixed inset-0 bg-[radial-gradient(ellipse_at_80%_80%,rgba(99,102,241,0.1),transparent_50%)] -z-10" />
+		<div class="fixed inset-0 sci-fi-grid -z-10" />
 
 		<div class="relative min-h-screen flex flex-col">
 			<Header />
 			<main class="flex-1">
 				<slot />
 			</main>
-			<footer class="mt-auto py-12 bg-background/80 backdrop-blur-sm border-t border-border">
+			<footer class="mt-auto py-12 bg-nebula-950/80 backdrop-blur-sm border-t border-nebula-800/30">
 				<div class="container mx-auto px-4 text-center text-muted-foreground">
-					<p>&copy; 2024 RRXS. 保留所有权利</p>
+					<p>&copy; 2025 RRXS / 千锤百问. 保留所有权利</p>
 				</div>
 			</footer>
 		</div>

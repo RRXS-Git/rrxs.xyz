@@ -2,41 +2,49 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="联系 & 加入我们 - rrxr.xyz">
-  <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">联系 & 加入我们</h1>
-  <section class="mb-8">
-    <h2 class="text-3xl font-semibold text-gray-700 mb-4">联系方式</h2>
-    <p class="text-gray-600 leading-relaxed mb-2">邮箱: your_email@example.com</p>
-    <p class="text-gray-600 leading-relaxed">电话: +86 123 4567 8900</p>
-  </section>
-  <section class="mb-8">
-    <h2 class="text-3xl font-semibold text-gray-700 mb-4">社交媒体链接</h2>
-    <ul class="flex space-x-4">
-      <li><a href="#" class="text-primary hover:underline">微信</a></li>
-      <li><a href="#" class="text-primary hover:underline">小红书</a></li>
-      <li><a href="#" class="text-primary hover:underline">抖音</a></li>
-    </ul>
-  </section>
-  <section>
-    <h2 class="text-3xl font-semibold text-gray-700 mb-4">加入共创（合作/学习小组）</h2>
-    <p class="text-gray-600 leading-relaxed">如果您对合作或加入学习小组感兴趣，请填写以下表单：</p>
-    <form class="mt-4 p-6 bg-white rounded-xl shadow-card">
-      <div class="mb-4">
-        <label for="name" class="block text-gray-700 text-sm font-bold mb-2">姓名:</label>
-        <input type="text" id="name" name="name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="您的姓名">
-      </div>
-      <div class="mb-4">
-        <label for="email" class="block text-gray-700 text-sm font-bold mb-2">邮箱:</label>
-        <input type="email" id="email" name="email" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="您的邮箱">
-      </div>
-      <div class="mb-6">
-        <label for="message" class="block text-gray-700 text-sm font-bold mb-2">消息:</label>
-        <textarea id="message" name="message" rows="5" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="您的消息"></textarea>
-      </div>
-      <div class="flex items-center justify-between">
-        <button type="submit" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl focus:outline-none focus:shadow-outline">发送</button>
-      </div>
-    </form>
-  </section>
-</Layout>
+<Layout title="联系 & 加入我们 — RRXS / 千锤百问">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <h1 class="text-4xl md:text-5xl font-display font-bold mb-12 text-center gradient-heading">联系 & 加入我们</h1>
 
+    <div class="max-w-4xl mx-auto space-y-8">
+      <section class="nebula-card p-8 rounded-xl">
+        <h2 class="text-2xl font-display font-semibold mb-4 text-foreground">联系方式</h2>
+        <p class="text-muted-foreground leading-relaxed mb-2">邮箱: your_email@example.com</p>
+        <p class="text-muted-foreground leading-relaxed">电话: +86 123 4567 8900</p>
+      </section>
+
+      <section class="nebula-card p-8 rounded-xl">
+        <h2 class="text-2xl font-display font-semibold mb-4 text-foreground">社交媒体链接</h2>
+        <ul class="flex space-x-6">
+          <li><a href="#" class="text-nebula-400 hover:text-nebula-300 transition-colors font-medium">微信</a></li>
+          <li><a href="#" class="text-nebula-400 hover:text-nebula-300 transition-colors font-medium">小红书</a></li>
+          <li><a href="#" class="text-nebula-400 hover:text-nebula-300 transition-colors font-medium">抖音</a></li>
+        </ul>
+      </section>
+
+      <section class="nebula-card p-8 rounded-xl">
+        <h2 class="text-2xl font-display font-semibold mb-4 text-foreground">加入共创（合作/学习小组）</h2>
+        <p class="text-muted-foreground leading-relaxed mb-6">如果您对合作或加入学习小组感兴趣，请填写以下表单：</p>
+        <form class="p-6 rounded-xl bg-card border border-nebula-800/40">
+          <div class="mb-4">
+            <label for="name" class="block text-foreground/80 text-sm font-bold mb-2">姓名:</label>
+            <input type="text" id="name" name="name" class="w-full px-4 py-2.5 rounded-lg bg-muted/50 border border-nebula-800/40 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-nebula-500/40 focus:border-nebula-500/50 transition-all" placeholder="您的姓名">
+          </div>
+          <div class="mb-4">
+            <label for="email" class="block text-foreground/80 text-sm font-bold mb-2">邮箱:</label>
+            <input type="email" id="email" name="email" class="w-full px-4 py-2.5 rounded-lg bg-muted/50 border border-nebula-800/40 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-nebula-500/40 focus:border-nebula-500/50 transition-all" placeholder="您的邮箱">
+          </div>
+          <div class="mb-6">
+            <label for="message" class="block text-foreground/80 text-sm font-bold mb-2">消息:</label>
+            <textarea id="message" name="message" rows="5" class="w-full px-4 py-2.5 rounded-lg bg-muted/50 border border-nebula-800/40 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-nebula-500/40 focus:border-nebula-500/50 transition-all" placeholder="您的消息"></textarea>
+          </div>
+          <div class="flex items-center justify-between">
+            <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-nebula-600 to-cosmic-600 text-white font-bold rounded-lg hover:from-nebula-500 hover:to-cosmic-500 transition-all duration-200 shadow-lg shadow-nebula-700/30 hover:shadow-nebula-500/40">
+              发送
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+</Layout>

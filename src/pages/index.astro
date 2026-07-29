@@ -8,26 +8,31 @@ const sortedPosts = allBlogPosts.sort((a, b) => b.data.pubDate.getTime() - a.dat
 const latestPosts = sortedPosts.slice(0, 3);
 ---
 
-<Layout title="RRXS 数字绿洲 - 知识与创新的交汇点">
+<Layout title="RRXS / 千锤百问 — 在提问中进化，在进化中答案自现">
   <!-- Hero Section -->
-  <section class="relative py-20 md:py-32 overflow-hidden">
+  <section class="relative py-24 md:py-40 overflow-hidden">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-col items-center text-center max-w-4xl mx-auto">
-        <h1 class="text-4xl md:text-6xl lg:text-7xl font-display font-bold mb-6 gradient-heading animate-fade-in">
-          欢迎来到 RRXS<span class="hidden sm:inline-block"> - 数字绿洲</span>
+      <div class="flex flex-col items-center text-center max-w-5xl mx-auto">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-nebula-500/30 bg-nebula-500/5 text-nebula-300 text-sm mb-8 animate-fade-in" style="animation-delay: 0.1s">
+          <span class="w-2 h-2 rounded-full bg-nebula-400 animate-pulse" />
+          千锤百问 · 知识共创社区
+        </div>
+        <h1 class="text-4xl md:text-6xl lg:text-7xl font-display font-bold mb-6 gradient-heading animate-fade-in leading-tight" style="animation-delay: 0.2s">
+          <span class="block">在提问中进化，</span>
+          <span class="block">在进化中答案自现</span>
         </h1>
-        <p class="text-lg md:text-xl lg:text-2xl text-muted-foreground mb-8 max-w-3xl animate-fade-in leading-relaxed" style="animation-delay: 0.2s">
-          这里是知识与创新的交汇点，我们提供 AI 学习、心灵成长与商务洞察的一站式平台。
+        <p class="text-lg md:text-xl lg:text-2xl text-muted-foreground mb-10 max-w-3xl animate-fade-in leading-relaxed" style="animation-delay: 0.3s">
+          每一个问题都是一次破茧——AI 学习 × 认知升级 × 商业实战。用一千锤铸一把剑，用一百问开一扇门。
         </p>
         <div class="flex flex-col sm:flex-row gap-4 animate-fade-in" style="animation-delay: 0.4s">
-          <a href="/about" class="inline-flex items-center justify-center px-8 py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-            了解更多
-            <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <a href="/about" class="group inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-nebula-600 to-cosmic-600 text-white font-semibold rounded-lg hover:from-nebula-500 hover:to-cosmic-500 transition-all duration-200 shadow-lg shadow-nebula-700/30 hover:shadow-nebula-500/40 transform hover:-translate-y-0.5">
+            开始探索
+            <svg class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </a>
-          <a href="/contact" class="inline-flex items-center justify-center px-8 py-3 bg-transparent border-2 border-border text-foreground font-semibold rounded-lg hover:bg-accent/50 transition-all duration-200 shadow-sm hover:shadow-md">
-            商务合作
+          <a href="/contact" class="inline-flex items-center justify-center px-8 py-3 bg-transparent border border-nebula-700/50 text-foreground font-semibold rounded-lg hover:bg-nebula-500/10 hover:border-nebula-500/50 transition-all duration-200">
+            加入共创
           </a>
         </div>
       </div>
@@ -35,86 +40,107 @@ const latestPosts = sortedPosts.slice(0, 3);
   </section>
 
   <!-- Features Section -->
-  <section class="py-16 md:py-24 bg-gradient-to-b from-background to-muted/30">
+  <section class="py-16 md:py-24 sci-fi-grid">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-16">
-        <h2 class="text-3xl md:text-4xl lg:text-5xl font-display font-bold mb-6 gradient-heading">探索 RRXS 的世界</h2>
+        <h2 class="text-3xl md:text-4xl lg:text-5xl font-display font-bold mb-6 gradient-heading">四大探索维度</h2>
         <p class="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-          无论您是寻找知识、灵感还是商业机会，我们都能满足您的需求
+          用问题的棱镜折射世界的每个切面
         </p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
         <!-- AI Learning Card -->
-        <div class="tech-card group p-6 rounded-xl hover:scale-105 transition-all duration-300">
-          <div class="w-12 h-12 bg-tech-500/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-tech-500/20 transition-colors">
-            <svg class="w-6 h-6 text-tech-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="nebula-card group p-6 rounded-xl">
+          <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4 bg-gradient-to-br from-nebula-500/20 to-cosmic-500/20 group-hover:from-nebula-500/30 group-hover:to-cosmic-500/30 transition-all">
+            <svg class="w-6 h-6 text-nebula-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
           </div>
-          <h3 class="text-xl font-semibold mb-3 text-card-foreground group-hover:text-tech-600 transition-colors">AI 学习运用</h3>
-          <p class="text-muted-foreground mb-4 leading-relaxed">探索人工智能的奥秘，学习前沿技术应用，掌握 AI 时代的核心技能。</p>
-          <a href="/ai-learning" class="inline-flex items-center text-tech-500 hover:text-tech-600 font-medium transition-colors">
-            开始学习
-            <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
+          <h3 class="text-lg font-semibold mb-3 text-card-foreground group-hover:text-nebula-300 transition-colors">AI 学习运用</h3>
+          <p class="text-sm text-muted-foreground mb-4 leading-relaxed">探索 AI 奥秘，掌握前沿工具，在智能时代游刃有余。</p>
+          <a href="/ai-learning" class="inline-flex items-center text-nebula-400 hover:text-nebula-300 text-sm font-medium transition-colors">
+            开始学习 <svg class="ml-1 w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </a>
         </div>
 
         <!-- Life Card -->
-        <div class="tech-card group p-6 rounded-xl hover:scale-105 transition-all duration-300">
-          <div class="w-12 h-12 bg-accent1-500/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent1-500/20 transition-colors">
-            <svg class="w-6 h-6 text-accent1-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="nebula-card group p-6 rounded-xl">
+          <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4 bg-gradient-to-br from-cosmic-500/20 to-accent/20 group-hover:from-cosmic-500/30 group-hover:to-accent/30 transition-all">
+            <svg class="w-6 h-6 text-cosmic-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </div>
-          <h3 class="text-xl font-semibold mb-3 text-card-foreground group-hover:text-accent1-500 transition-colors">心灵生活</h3>
-          <p class="text-muted-foreground mb-4 leading-relaxed">发现内心的平静与力量，分享生活感悟与成长故事，构建美好人生。</p>
-          <a href="/life" class="inline-flex items-center text-accent1-500 hover:text-accent1-600 font-medium transition-colors">
-            探索内心
-            <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
+          <h3 class="text-lg font-semibold mb-3 text-card-foreground group-hover:text-cosmic-300 transition-colors">心灵生活</h3>
+          <p class="text-sm text-muted-foreground mb-4 leading-relaxed">在快时代里停下来，发现内心的平静与力量。</p>
+          <a href="/life" class="inline-flex items-center text-cosmic-400 hover:text-cosmic-300 text-sm font-medium transition-colors">
+            探索内心 <svg class="ml-1 w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </a>
         </div>
 
         <!-- Business Card -->
-        <div class="tech-card group p-6 rounded-xl hover:scale-105 transition-all duration-300">
-          <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+        <div class="nebula-card group p-6 rounded-xl">
+          <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4 bg-gradient-to-br from-primary/20 to-nebula-500/20 group-hover:from-primary/30 group-hover:to-nebula-500/30 transition-all">
             <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
             </svg>
           </div>
-          <h3 class="text-xl font-semibold mb-3 text-card-foreground group-hover:text-primary transition-colors">商务板块</h3>
-          <p class="text-muted-foreground mb-4 leading-relaxed">提升商业智慧与实践，分享营销策略、投资理念和创业经验。</p>
-          <a href="/business" class="inline-flex items-center text-primary hover:text-primary/80 font-medium transition-colors">
-            商务洞察
-            <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
+          <h3 class="text-lg font-semibold mb-3 text-card-foreground group-hover:text-primary transition-colors">商务板块</h3>
+          <p class="text-sm text-muted-foreground mb-4 leading-relaxed">商业洞察、营销策略、期货期权——实打实的硬核实战。</p>
+          <a href="/business" class="inline-flex items-center text-primary hover:text-primary/80 text-sm font-medium transition-colors">
+            商务洞察 <svg class="ml-1 w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </a>
+        </div>
+
+        <!-- Blog/Community Card -->
+        <div class="nebula-card group p-6 rounded-xl">
+          <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4 bg-gradient-to-br from-nebula-500/20 to-accent1/20 group-hover:from-nebula-500/30 group-hover:to-accent1/30 transition-all">
+            <svg class="w-6 h-6 text-nebula-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold mb-3 text-card-foreground group-hover:text-nebula-300 transition-colors">共进社区</h3>
+          <p class="text-sm text-muted-foreground mb-4 leading-relaxed">一起写、一起学、一起成长。让每个问题都找到回音。</p>
+          <a href="/blog" class="inline-flex items-center text-nebula-400 hover:text-nebula-300 text-sm font-medium transition-colors">
+            阅读文章 <svg class="ml-1 w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Blog posts preview -->
+      <div class="mb-8">
+        <h3 class="text-2xl font-display font-semibold mb-8 text-center gradient-heading">最新思考</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {latestPosts.map((post) => (
+            <a href={`/blog/${post.slug}`} class="nebula-card p-6 rounded-xl block group">
+              <time class="text-xs text-nebula-400/70 font-mono">{post.data.pubDate.toLocaleDateString('zh-CN')}</time>
+              <h4 class="text-base font-semibold mt-2 mb-2 text-card-foreground group-hover:text-nebula-300 transition-colors">{post.data.title}</h4>
+              <p class="text-sm text-muted-foreground line-clamp-2">{post.data.description}</p>
+            </a>
+          ))}
         </div>
       </div>
     </div>
   </section>
 
   <!-- CTA Section -->
-  <section class="py-16 md:py-24 bg-gradient-to-r from-primary/10 via-accent/10 to-accent1-500/10">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+  <section class="relative py-20 md:py-28 overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-r from-nebula-900/60 via-cosmic-900/40 to-nebula-900/60 -z-10" />
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.1),transparent_60%)] -z-10" />
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
       <div class="text-center max-w-3xl mx-auto">
         <h2 class="text-3xl md:text-4xl font-display font-bold mb-6 gradient-heading">
-          准备好开始您的数字绿洲之旅了吗？
+          准备好开始你的千锤百问之旅了吗？
         </h2>
         <p class="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed">
-          无论您是寻找知识、灵感还是商业机会，我们都期待与您携手前行。
+          每个伟大的答案都始于一个勇敢的问题。加入我们，一起在提问中进化。
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <a href="/contact" class="inline-flex items-center justify-center px-8 py-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+          <a href="/contact" class="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-nebula-600 to-cosmic-600 text-white font-semibold rounded-lg hover:from-nebula-500 hover:to-cosmic-500 transition-all duration-200 shadow-lg shadow-nebula-700/30 hover:shadow-nebula-500/40 transform hover:-translate-y-0.5">
             开始对话
           </a>
-          <a href="/about" class="inline-flex items-center justify-center px-8 py-4 bg-transparent border-2 border-border text-foreground font-semibold rounded-lg hover:bg-accent/50 transition-all duration-200">
-            了解更多
+          <a href="/about" class="inline-flex items-center justify-center px-8 py-4 bg-transparent border border-nebula-700/50 text-foreground font-semibold rounded-lg hover:bg-nebula-500/10 hover:border-nebula-500/50 transition-all duration-200">
+            认识我们
           </a>
         </div>
       </div>

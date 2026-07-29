@@ -2,26 +2,32 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="AI学习运用 - rrxr.xyz">
-  <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">AI学习运用</h1>
-  <section class="mb-8">
-    <h2 class="text-3xl font-semibold text-gray-700 mb-4">学习笔记</h2>
-    <ul class="list-disc list-inside text-gray-600 leading-relaxed">
-      <li>AI基础</li>
-      <li>应用实践（Excel Copilot, 自媒体AI）</li>
-      <li>前沿趋势</li>
-    </ul>
-  </section>
-  <section class="mb-8">
-    <h2 class="text-3xl font-semibold text-gray-700 mb-4">工具与资源</h2>
-    <ul class="list-disc list-inside text-gray-600 leading-relaxed">
-      <li>本地模型（Ollama, OpenManus）</li>
-      <li>API与教程（DeepSeek 等）</li>
-    </ul>
-  </section>
-  <section>
-    <h2 class="text-3xl font-semibold text-gray-700 mb-4">实战案例</h2>
-    <p class="text-gray-600 leading-relaxed">这里将展示AI实战案例。</p>
-  </section>
-</Layout>
+<Layout title="AI学习运用 — RRXS / 千锤百问">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <h1 class="text-4xl md:text-5xl font-display font-bold mb-12 text-center gradient-heading">AI 学习运用</h1>
 
+    <div class="max-w-4xl mx-auto space-y-8">
+      <section class="nebula-card p-8 rounded-xl">
+        <h2 class="text-2xl font-display font-semibold mb-4 text-foreground">学习笔记</h2>
+        <ul class="list-disc list-inside text-muted-foreground leading-relaxed space-y-2">
+          <li>AI基础</li>
+          <li>应用实践（Excel Copilot, 自媒体AI）</li>
+          <li>前沿趋势</li>
+        </ul>
+      </section>
+
+      <section class="nebula-card p-8 rounded-xl">
+        <h2 class="text-2xl font-display font-semibold mb-4 text-foreground">工具与资源</h2>
+        <ul class="list-disc list-inside text-muted-foreground leading-relaxed space-y-2">
+          <li>本地模型（Ollama, OpenManus）</li>
+          <li>API与教程（DeepSeek 等）</li>
+        </ul>
+      </section>
+
+      <section class="nebula-card p-8 rounded-xl">
+        <h2 class="text-2xl font-display font-semibold mb-4 text-foreground">实战案例</h2>
+        <p class="text-muted-foreground leading-relaxed">这里将展示AI实战案例。</p>
+      </section>
+    </div>
+  </div>
+</Layout>

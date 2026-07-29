@@ -2,24 +2,24 @@
 import Search from './Search.astro';
 ---
 
-<header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+<header class="sticky top-0 z-50 w-full border-b border-nebula-800/40 glass-effect">
   <div class="container mx-auto px-4">
     <div class="flex h-16 items-center justify-between">
       <div class="flex items-center">
         <a href="/" class="flex items-center space-x-2">
           <span class="text-2xl font-bold gradient-heading">RRXS</span>
-          <span class="hidden sm:inline text-sm text-muted-foreground">数字绿洲</span>
+          <span class="hidden sm:inline text-sm text-muted-foreground">千锤百问</span>
         </a>
       </div>
       
       <!-- Desktop Navigation -->
       <nav class="hidden md:flex items-center space-x-6 text-sm">
-        <a href="/" class="text-foreground/60 hover:text-foreground transition-colors hover:underline">首页</a>
-        <a href="/about" class="text-foreground/60 hover:text-foreground transition-colors hover:underline">关于我</a>
-        <a href="/ai-learning" class="text-foreground/60 hover:text-foreground transition-colors hover:underline">AI学习</a>
-        <a href="/life" class="text-foreground/60 hover:text-foreground transition-colors hover:underline">心灵生活</a>
-        <a href="/business" class="text-foreground/60 hover:text-foreground transition-colors hover:underline">商务板块</a>
-        <a href="/contact" class="text-foreground/60 hover:text-foreground transition-colors hover:underline">联系</a>
+        <a href="/" class="text-foreground/60 hover:text-nebula-300 transition-colors">首页</a>
+        <a href="/about" class="text-foreground/60 hover:text-nebula-300 transition-colors">关于我</a>
+        <a href="/ai-learning" class="text-foreground/60 hover:text-nebula-300 transition-colors">AI学习</a>
+        <a href="/life" class="text-foreground/60 hover:text-nebula-300 transition-colors">心灵生活</a>
+        <a href="/business" class="text-foreground/60 hover:text-nebula-300 transition-colors">商务板块</a>
+        <a href="/contact" class="text-foreground/60 hover:text-nebula-300 transition-colors">联系</a>
       </nav>
 
       <div class="flex items-center space-x-4">
@@ -27,7 +27,7 @@ import Search from './Search.astro';
           <Search />
         </div>
         <!-- Mobile menu button -->
-        <button id="menu-button" class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-foreground/60 hover:text-foreground hover:bg-accent/50 transition-colors">
+        <button id="menu-button" class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-foreground/60 hover:text-foreground hover:bg-nebula-500/20 transition-colors">
           <svg class="h-5 w-5" stroke="currentColor" fill="none" viewBox="0 0 24 24">
             <path id="menu-open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             <path id="menu-close" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -37,14 +37,14 @@ import Search from './Search.astro';
     </div>
 
     <!-- Mobile Navigation -->
-    <div id="mobile-menu" class="hidden md:hidden border-t bg-background/95 backdrop-blur">
+    <div id="mobile-menu" class="hidden md:hidden border-t border-nebula-800/30 bg-nebula-950/90 backdrop-blur">
       <div class="px-2 py-3 space-y-1">
-        <a href="/" class="block px-3 py-2 text-foreground/60 hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">首页</a>
-        <a href="/about" class="block px-3 py-2 text-foreground/60 hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">关于我</a>
-        <a href="/ai-learning" class="block px-3 py-2 text-foreground/60 hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">AI学习</a>
-        <a href="/life" class="block px-3 py-2 text-foreground/60 hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">心灵生活</a>
-        <a href="/business" class="block px-3 py-2 text-foreground/60 hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">商务板块</a>
-        <a href="/contact" class="block px-3 py-2 text-foreground/60 hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">联系</a>
+        <a href="/" class="block px-3 py-2 text-foreground/60 hover:text-nebula-300 hover:bg-nebula-500/10 rounded-md transition-colors">首页</a>
+        <a href="/about" class="block px-3 py-2 text-foreground/60 hover:text-nebula-300 hover:bg-nebula-500/10 rounded-md transition-colors">关于我</a>
+        <a href="/ai-learning" class="block px-3 py-2 text-foreground/60 hover:text-nebula-300 hover:bg-nebula-500/10 rounded-md transition-colors">AI学习</a>
+        <a href="/life" class="block px-3 py-2 text-foreground/60 hover:text-nebula-300 hover:bg-nebula-500/10 rounded-md transition-colors">心灵生活</a>
+        <a href="/business" class="block px-3 py-2 text-foreground/60 hover:text-nebula-300 hover:bg-nebula-500/10 rounded-md transition-colors">商务板块</a>
+        <a href="/contact" class="block px-3 py-2 text-foreground/60 hover:text-nebula-300 hover:bg-nebula-500/10 rounded-md transition-colors">联系</a>
         <div class="pt-2 sm:hidden">
           <Search />
         </div>
