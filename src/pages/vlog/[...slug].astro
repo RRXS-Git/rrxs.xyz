@@ -1,0 +1,47 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('vlog');
+  return entries.map((entry) => ({
+    params: { slug: entry.slug },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+---
+
+<Layout title={entry.data.title}>
+  <article class="container mx-auto px-4 sm:px-6 lg:px-8 py-16 max-w-4xl">
+    <a href="/vlog" class="inline-flex items-center text-nebula-400 hover:text-nebula-300 text-sm mb-6 transition-colors">
+      <svg class="mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      返回 Vlog
+    </a>
+    
+    <h1 class="text-3xl md:text-4xl font-display font-bold mb-4 gradient-heading">{entry.data.title}</h1>
+    
+    <div class="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-8">
+      <time>{entry.data.pubDate.toLocaleDateString('zh-CN')}</time>
+      {entry.data.duration && <span class="bg-nebula-800/50 px-2 py-0.5 rounded">{entry.data.duration}</span>}
+      {entry.data.tags?.map(tag => (
+        <span class="bg-nebula-800/30 px-2 py-0.5 rounded text-nebula-400">#{tag}</span>
+      ))}
+    </div>
+
+    {entry.data.videoUrl && (
+      <div class="aspect-video bg-nebula-900/80 rounded-xl mb-8 flex items-center justify-center border border-nebula-800/30">
+        <p class="text-muted-foreground text-center px-4">
+          <span class="block text-lg mb-2">🎬 视频托管于 OneDrive</span>
+          <span class="text-sm">视频链接：<a href={entry.data.videoUrl} class="text-nebula-400 hover:text-nebula-300 underline" target="_blank">{entry.data.videoUrl}</a></span>
+        </p>
+      </div>
+    )}
+
+    <div class="prose prose-invert lg:prose-xl max-w-none">
+      <Content />
+    </div>
+  </article>
+</Layout>
