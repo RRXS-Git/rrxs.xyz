@@ -25,10 +25,11 @@ jobs:
 
       - name: Debug env
         run: |
-          echo "Python: $(python3 --version)"
+          echo "Python: $(python3 --version 2>/dev/null || echo NONE)"
+          echo "jq: $(jq --version 2>/dev/null || echo NONE)"
           echo "PWD: $(pwd)"
-          echo "Has API TOKEN: $([ -n \"${CF_API_TOKEN}\" ] && echo YES || echo NO)"
-          echo "Has ACCOUNT ID: $([ -n \"${CF_ACCOUNT_ID}\" ] && echo YES || echo NO)"
+          echo "Has TOKEN: $([ -n \"${CF_API_TOKEN}\" ] && echo YES || echo NO)"
+          echo "Has ACCT: $([ -n \"${CF_ACCOUNT_ID}\" ] && echo YES || echo NO)"
 
       - name: Ensure production_branch=main
         run: |
@@ -38,7 +39,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"production_branch":"main"}' \
             "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/rrxs-xyz" | \
-            python3 -c "import sys,json; print('PATCH:', json.load(sys.stdin).get('success'))"
+            jq -c '{success, errors}'
 
       - name: Deploy to rrxs-xyz
         uses: cloudflare/wrangler-action@v3
@@ -47,14 +48,53 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist/ --project-name=rrxs-xyz --branch=main
 
-      - name: Migrate custom domain rrxs.xyz
+      - name: Migrate custom domain rrxs.xyz (curl only)
         run: |
           set +e
-          echo "--- Running migrate-domain.py ---"
-          python3 -u scripts/migrate-domain.py 2>&1
-          EXIT_CODE=$?
-          echo "--- Exit code: $EXIT_CODE ---"
-          exit $EXIT_CODE
+          AUTH="Authorization: Bearer ${CF_API_TOKEN}"
+          BASE="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects"
+          TARGET="rrxs-xyz"
+          DOMAIN="rrxs.xyz"
+
+          echo "=== Step 1: Find which project has rrxs.xyz ==="
+          OLD_PROJ=""
+          for PROJ in $(curl -s -H "$AUTH" "${BASE}?per_page=50" | jq -r '.result[].name'); do
+            FOUND=$(curl -s -H "$AUTH" "${BASE}/${PROJ}/domains" | jq -r --arg d "$DOMAIN" '.result[] | select(.name==$d) | .name')
+            if [ -n "$FOUND" ]; then
+              OLD_PROJ="$PROJ"
+              echo ">>> $DOMAIN found on project: $PROJ"
+            fi
+            echo "  $PROJ"
+          done
+
+          echo ""
+          echo "=== Step 2: Delete from old project ==="
+          if [ -n "$OLD_PROJ" ] && [ "$OLD_PROJ" != "$TARGET" ]; then
+            echo "Deleting $DOMAIN from $OLD_PROJ..."
+            curl -s -X DELETE -H "$AUTH" "${BASE}/${OLD_PROJ}/domains/${DOMAIN}" | jq -c '{success, errors}'
+          elif [ "$OLD_PROJ" = "$TARGET" ]; then
+            echo "Already on $TARGET, no delete needed"
+          else
+            echo "Not found on any project, skipping delete"
+          fi
+
+          echo ""
+          echo "=== Step 3: Add to $TARGET ==="
+          if [ "$OLD_PROJ" != "$TARGET" ]; then
+            echo "Adding $DOMAIN to $TARGET..."
+            curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+              -d "{\"name\":\"${DOMAIN}\"}" \
+              "${BASE}/${TARGET}/domains" | jq -c '{success, errors}'
+          else
+            echo "Already on $TARGET, skipping add"
+          fi
+
+          echo ""
+          echo "=== Step 4: Verify domains ==="
+          curl -s -H "$AUTH" "${BASE}/${TARGET}/domains" | jq -c '.result[] | {name, status}'
+
+          echo ""
+          echo "=== DONE ==="
 
       - name: Verify
         run: |
