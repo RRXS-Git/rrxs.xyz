@@ -1,4 +1,5 @@
 ---
+import '../styles/global.css';
 import Header from '../components/Header.astro';
 interface Props {
 	title: string;
@@ -24,8 +25,6 @@ const { title, description = "RRXS / 千锤百问 — 在提问中进化，在�
 		<!-- Preload fonts -->
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-		<link rel="stylesheet" href="../styles/global.css" />
 	</head>
 	<body class="min-h-full bg-background text-foreground font-sans antialiased">
 		<!-- Background Sci-Fi nebula -->
