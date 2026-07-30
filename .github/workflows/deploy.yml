@@ -23,7 +23,14 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      - name: Set production_branch=main
+      - name: Debug env
+        run: |
+          echo "Python: $(python3 --version)"
+          echo "PWD: $(pwd)"
+          echo "Has API TOKEN: $([ -n \"${CF_API_TOKEN}\" ] && echo YES || echo NO)"
+          echo "Has ACCOUNT ID: $([ -n \"${CF_ACCOUNT_ID}\" ] && echo YES || echo NO)"
+
+      - name: Ensure production_branch=main
         run: |
           set +e
           curl -s -X PATCH \
@@ -41,7 +48,13 @@ jobs:
           command: pages deploy dist/ --project-name=rrxs-xyz --branch=main
 
       - name: Migrate custom domain rrxs.xyz
-        run: python3 scripts/migrate-domain.py
+        run: |
+          set +e
+          echo "--- Running migrate-domain.py ---"
+          python3 -u scripts/migrate-domain.py 2>&1
+          EXIT_CODE=$?
+          echo "--- Exit code: $EXIT_CODE ---"
+          exit $EXIT_CODE
 
       - name: Verify
         run: |
