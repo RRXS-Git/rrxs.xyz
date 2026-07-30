@@ -1,115 +1,171 @@
 #!/bin/bash
-# migrate-domain.sh — add rrxs.xyz as custom domain on rrxs-xyz Pages project
 set -euo pipefail
 
 AUTH="Authorization: Bearer ${CF_API_TOKEN:?CF_API_TOKEN not set}"
 ACCT="${CF_ACCOUNT_ID:?CF_ACCOUNT_ID not set}"
 BASE="https://api.cloudflare.com/client/v4/accounts/${ACCT}/pages/projects"
-TARGET="rrxs-xyz"
+
 DOMAIN="rrxs.xyz"
+TARGET="rrxs-xyz"
 
-api() {
-  local method="$1" url="$2" data="${3:-}"
-  if [ -n "$data" ]; then
-    curl -s -X "$method" -H "$AUTH" -H "Content-Type: application/json" -d "$data" "$url"
-  else
-    curl -s -X "$method" -H "$AUTH" "$url"
-  fi
-}
+cd "$(dirname "$0")"
 
-# Safely extract from JSON — returns empty if jq fails or result missing
-safe_jq() {
-  local filter="$1" json="$2"
-  local result; result=$(echo "$json" | jq -r "$filter // \"\"" 2>/dev/null) || true
-  echo "$result"
-}
+echo "============================================"
+echo "  Domain Migration Script v3"
+echo "  Target project: ${TARGET}"
+echo "  Domain: ${DOMAIN}"
+echo "============================================"
 
-echo "=== Step 1: List Pages projects ==="
-PROJECTS=$(api GET "${BASE}?per_page=20")
-SUCCESS=$(safe_jq '.success // false' "$PROJECTS")
-echo "  API success: $SUCCESS"
-safe_jq '.result[] | "  - \(.name)"' "$PROJECTS" | while read -r line; do echo "$line"; done
+# Step 1: List all projects
 echo ""
+echo "=== Step 1: List all Pages projects ==="
+curl -s -H "$AUTH" "${BASE}?per_page=20" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for p in data.get('result', []):
+    print(f'  {p[\"name\"]}  subdomain: {p.get(\"subdomain\",\"?\")}')
+"
 
-DOMAINS=$(safe_jq '.result' "$PROJECTS")
-echo "=== Step 2: Check domains on all projects ==="
+# Step 2: For each project, check if domain exists
+echo ""
+echo "=== Step 2: Check which project has ${DOMAIN} ==="
 OLD_PROJ=""
-for PROJ in $(safe_jq '.result[].name // ""' "$PROJECTS"); do
-  [ -z "$PROJ" ] && continue
-  DOMS=$(api GET "${BASE}/${PROJ}/domains")
-  FOUND=$(safe_jq --arg d "$DOMAIN" '.result[] | select(.name==$d) | .name // ""' "$DOMS")
-  if [ -n "$FOUND" ]; then
-    STATUS=$(safe_jq --arg d "$DOMAIN" '.result[] | select(.name==$d) | .status // "unknown"' "$DOMS")
-    OLD_PROJ="$PROJ"
-    echo "  >>> $DOMAIN FOUND on $PROJ (status=$STATUS)"
-  else
-    COUNT=$(safe_jq '.result | length // 0' "$DOMS")
-    echo "  $PROJ: $COUNT domains"
-  fi
-done
+ALL_PROJS=$(curl -s -H "$AUTH" "${BASE}?per_page=20")
+echo "$ALL_PROJS" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for p in data.get('result', []):
+    name = p['name']
+    print(f'--- {name} ---')
+    import subprocess, urllib.request
+"
+
+while IFS= read -r line; do
+    proj_name=$(echo "$line" | xargs)
+    [ -z "$proj_name" ] && continue
+    echo " "
+    echo "--- Checking project: ${proj_name} ---"
+    doms=$(curl -s -H "$AUTH" "${BASE}/${proj_name}/domains")
+    has_domain=$(echo "$doms" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    for d in data.get('result', []):
+        if d['name'] == '${DOMAIN}':
+            print(d['status'])
+            sys.exit(0)
+except: pass
+print('NONE')
+" 2>/dev/null || echo "NONE")
+    echo "  Domain status: ${has_domain}"
+
+    if [ "$has_domain" != "NONE" ]; then
+        echo "  -> Found on project: ${proj_name} (status: ${has_domain})"
+        OLD_PROJ="${proj_name}"
+    fi
+done < <(echo "$ALL_PROJS" | python3 -c "
+import sys, json
+for p in json.load(sys.stdin).get('result', []):
+    print(p['name'])
+" 2>/dev/null)
+
+echo ""
+echo "=== Step 3: Domain ownership ==="
+echo "  Found on: ${OLD_PROJ:-NONE}"
+
 if [ -z "$OLD_PROJ" ]; then
-  echo "  Domain not found on any Pages project"
-fi
-echo ""
-
-echo "=== Step 3: Delete from old if needed ==="
-if [ -n "$OLD_PROJ" ] && [ "$OLD_PROJ" != "$TARGET" ]; then
-  echo "  Deleting $DOMAIN from $OLD_PROJ..."
-  api DELETE "${BASE}/${OLD_PROJ}/domains/${DOMAIN}" > /dev/null 2>&1 || true
-  echo "  Deleted"
-elif [ "$OLD_PROJ" = "$TARGET" ]; then
-  echo "  Already on $TARGET — checking status..."
-  FINAL_STATUS=$(safe_jq --arg d "$DOMAIN" '.result[] | select(.name==$d) | .status // "unknown"' "$DOMS")
-  echo "  Domain status: $FINAL_STATUS"
-  if [ "$FINAL_STATUS" = "active" ]; then
-    echo "  ✅ Domain already active — nothing to do!"
-    echo "DONE"
-    exit 0
-  fi
-  echo "  Status is $FINAL_STATUS — proceeding"
+    echo "  -> Domain not on any project. Adding to ${TARGET}..."
+    curl -s -X POST -H "$AUTH" "${BASE}/${TARGET}/domains" \
+      -H "Content-Type: application/json" \
+      -d "{\"name\":\"${DOMAIN}\"}" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+if d.get('success'):
+    print(f\"  RESULT: success! domain_id={d['result'].get('id','?')} status={d['result'].get('status','?')}\")
+else:
+    print(f\"  RESULT: FAILED — {d.get('errors',[{}])[0].get('message','unknown error')}\")
+"
+elif [ "$OLD_PROJ" != "$TARGET" ]; then
+    echo "  -> Domain on WRONG project: ${OLD_PROJ}. Deleting..."
+    # Find domain ID
+    dom_id=$(curl -s -H "$AUTH" "${BASE}/${OLD_PROJ}/domains" | python3 -c "
+import sys, json
+for d in json.load(sys.stdin).get('result', []):
+    if d['name'] == '${DOMAIN}':
+        print(d['id'])
+" 2>/dev/null)
+    if [ -n "$dom_id" ]; then
+        echo "  Domain ID: ${dom_id}"
+        del_res=$(curl -s -X DELETE -H "$AUTH" "${BASE}/${OLD_PROJ}/domains/${dom_id}")
+        del_ok=$(echo "$del_res" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('success',False))" 2>/dev/null)
+        echo "  Deleted from ${OLD_PROJ}: ${del_ok}"
+    fi
+    echo "  Adding to ${TARGET}..."
+    curl -s -X POST -H "$AUTH" "${BASE}/${TARGET}/domains" \
+      -H "Content-Type: application/json" \
+      -d "{\"name\":\"${DOMAIN}\"}" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+if d.get('success'):
+    print(f\"  RESULT: success! domain_id={d['result'].get('id','?')} status={d['result'].get('status','?')}\")
+else:
+    print(f\"  RESULT: FAILED — {d.get('errors',[{}])[0].get('message','unknown error')}\")
+"
 else
-  echo "  Fresh add"
+    echo "  -> Domain already on ${TARGET}"
+    # Check if active
+    status=$(curl -s -H "$AUTH" "${BASE}/${TARGET}/domains" | python3 -c "
+import sys, json
+for d in json.load(sys.stdin).get('result', []):
+    if d['name'] == '${DOMAIN}':
+        print(d['status'])
+" 2>/dev/null)
+    echo "  Domain status: ${status:-unknown}"
+    if [ "${status}" = "active" ]; then
+        echo "  Active — nothing to do."
+    else
+        echo "  NOT active — removing and re-adding..."
+        dom_id=$(curl -s -H "$AUTH" "${BASE}/${TARGET}/domains" | python3 -c "
+import sys, json
+for d in json.load(sys.stdin).get('result', []):
+    if d['name'] == '${DOMAIN}':
+        print(d['id'])
+" 2>/dev/null)
+        if [ -n "$dom_id" ]; then
+            curl -s -X DELETE -H "$AUTH" "${BASE}/${TARGET}/domains/${dom_id}" > /dev/null
+            echo "  Removed. Re-adding..."
+        fi
+        curl -s -X POST -H "$AUTH" "${BASE}/${TARGET}/domains" \
+          -H "Content-Type: application/json" \
+          -d "{\"name\":\"${DOMAIN}\"}" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+if d.get('success'):
+    print(f\"  RE-ADDED. id={d['result'].get('id','?')} status={d['result'].get('status','?')}\")
+else:
+    print(f\"  RE-ADD FAILED — {d.get('errors',[{}])[0].get('message','unknown error')}\")
+"
+    fi
 fi
-echo ""
 
-echo "=== Step 4: Add custom domain ==="
-ADD=$(api POST "${BASE}/${TARGET}/domains" "{\"name\":\"${DOMAIN}\"}")
-ADD_OK=$(safe_jq '.success // false' "$ADD")
-echo "  POST /domains success: $ADD_OK"
-safe_jq '{success, errors, result}' "$ADD" | head -c 500
+# Step 4: Verify
 echo ""
-sleep 3
+echo "=== Step 4: Final verification ==="
+domains_now=$(curl -s -H "$AUTH" "${BASE}/${TARGET}/domains" | python3 -c "
+import sys, json
+for d in json.load(sys.stdin).get('result', []):
+    print(f'  {d[\"name\"]} — status: {d[\"status\"]}')
+" 2>/dev/null || echo "  No domains found on ${TARGET}")
+echo "${domains_now}"
+
 echo ""
+echo "=== Step 5: DNS check ==="
+dns_ip=$(dig +short ${DOMAIN} A 2>/dev/null | tr '\n' ' ')
+pages_ip=$(dig +short ${TARGET}.pages.dev A 2>/dev/null | tr '\n' ' ')
+echo "  ${DOMAIN} => ${dns_ip:-no A record}"
+echo "  ${TARGET}.pages.dev => ${pages_ip}"
 
-echo "=== Step 5: Verify ==="
-FINAL=$(api GET "${BASE}/${TARGET}/domains")
-FOUND_STATUS=$(safe_jq --arg d "$DOMAIN" '.result[] | select(.name==$d) | .status // "missing"' "$FINAL")
-echo "  Domain status: $FOUND_STATUS"
-safe_jq '.result[] | {name, status}' "$FINAL"
-
-if [ "$FOUND_STATUS" = "missing" ]; then
-  echo ""
-  echo "=== Step 5b: Fallback — DNS API ==="
-  ZONES=$(api GET "https://api.cloudflare.com/client/v4/zones?name=${DOMAIN}")
-  ZONE_ID=$(safe_jq '.result[0].id // ""' "$ZONES")
-  if [ -n "$ZONE_ID" ]; then
-    echo "  Zone ID: $ZONE_ID"
-    DNS_ADD=$(api POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records" \
-      "{\"type\":\"CNAME\",\"name\":\"${DOMAIN}\",\"content\":\"${TARGET}.pages.dev\",\"ttl\":1,\"proxied\":true}")
-    DNS_OK=$(safe_jq '.success // false' "$DNS_ADD")
-    echo "  DNS CNAME success: $DNS_OK"
-    safe_jq '{success, errors}' "$DNS_ADD"
-
-    echo "  Retrying Pages domain add..."
-    RETRY=$(api POST "${BASE}/${TARGET}/domains" "{\"name\":\"${DOMAIN}\"}")
-    echo "  Retry: $(safe_jq '{success, errors}' "$RETRY")"
-    sleep 3
-    api GET "${BASE}/${TARGET}/domains" | jq -c '.result[] | {name, status}' 2>/dev/null || echo "  (no domains)"
-  else
-    echo "  ERROR: Cannot find zone"
-  fi
-fi
 echo ""
-echo "=== Step 6: Final ==="
-safe_jq '.result[] | {name, status}' "$(api GET "${BASE}/${TARGET}/domains")"
-echo "DONE"
+echo "=== DONE ==="
+echo "  Check https://${DOMAIN} in a few minutes."
+echo "  New content on: https://${TARGET}.pages.dev/"
