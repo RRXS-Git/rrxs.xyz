@@ -19,16 +19,29 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      - name: Ensure production_branch=main (before deploy)
+      - name: Set production_branch=main
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           API="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/rrxs-xyz"
-          AUTH="Authorization: Bearer ${CF_API_TOKEN}"
-          echo "Setting production_branch to main..."
-          curl -s -X PATCH -H "$AUTH" -H "Content-Type: application/json" \
-            -d '{"production_branch":"main"}' "$API" | jq '{success, errors}'
+          echo "=== PATCH production_branch=main ==="
+          curl -s -X PATCH -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"production_branch":"main"}' "$API" | jq '{success, errors}' >> $GITHUB_STEP_SUMMARY
+          echo "=== Project state after PATCH ==="
+          curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" "$API" | \
+            jq '{production_branch: .result.production_branch, canonical_id: .result.canonical_deployment.id}' >> $GITHUB_STEP_SUMMARY
+
+      - name: Show current deployments
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          API="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/rrxs-xyz/deployments"
+          echo "=== Last 3 deployments ==="
+          curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" "${API}?per_page=3" | \
+            jq '[.result[] | {id, short_id: .id[0:8], branch, environment, created_on, aliases}]' >> $GITHUB_STEP_SUMMARY
 
       - name: Deploy via wrangler
         uses: cloudflare/wrangler-action@v3
@@ -37,10 +50,12 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist/ --project-name=rrxs-xyz --branch=main
 
-      - name: Verify production_branch after deploy
+      - name: Verify deployment was promoted
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           API="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/rrxs-xyz"
-          curl -s -H "$AUTH" "$API" | jq '{production_branch: .result.production_branch, latest_deployment_id: .result.latest_deployment.id, canonical_id: .result.canonical_deployment.id}'
+          echo "=== Production branch + canonical deployment ==="
+          curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" "$API" | \
+            jq '{production_branch: .result.production_branch, canonical_created: .result.canonical_deployment.created_on, latest_created: .result.latest_deployment.created_on}' >> $GITHUB_STEP_SUMMARY
