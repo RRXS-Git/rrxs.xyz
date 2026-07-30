@@ -18,9 +18,61 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run build
-      - name: Deploy to Cloudflare Pages
+
+      - name: Deploy via wrangler
         uses: cloudflare/wrangler-action@v3
+        id: wrangler
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist/ --project-name=rrxs-xyz --branch=main
+
+      - name: Ensure production branch and canonical deployment
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          API="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/rrxs-xyz"
+          AUTH="Authorization: Bearer ${CF_API_TOKEN}"
+          CT="Content-Type: application/json"
+
+          echo "::group::1. Ensure production_branch=main"
+          PROJECT=$(curl -s -H "$AUTH" "$API")
+          CURRENT_BRANCH=$(echo "$PROJECT" | python3 -c "import sys,json; p=json.load(sys.stdin); print(p.get('result',{}).get('deployment_configs',{}).get('production_branch','NONE'))" 2>/dev/null || echo "UNKNOWN")
+          echo "Current production_branch: $CURRENT_BRANCH"
+          if [ "$CURRENT_BRANCH" != "main" ]; then
+            echo "Setting production_branch to main..."
+            RESULT=$(curl -s -X PATCH -H "$AUTH" -H "$CT" -d '{"deployment_configs":{"production_branch":"main"}}' "$API")
+            echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print('OK' if d.get('success') else 'FAIL: '+str(d))"
+          else
+            echo "Already set -- skipping PATCH"
+          fi
+          echo "::endgroup::"
+
+          echo "::group::2. Set latest deployment as canonical"
+          LATEST=$(curl -s -H "$AUTH" "${API}/deployments?per_page=1" | python3 -c "import sys,json; d=json.load(sys.stdin); r=d.get('result',[]); print(r[0]['id'] if r else 'NONE')")
+          echo "Latest deployment ID: $LATEST"
+          if [ "$LATEST" != "NONE" ]; then
+            # PATCH the project to point canonical_deployment to this ID
+            # Note: canonical_deployment expects an object, but some API versions accept string
+            RESULT=$(curl -s -X PATCH -H "$AUTH" -H "$CT" -d "{\"canonical_deployment\":\"$LATEST\"}" "$API")
+            echo "$RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print('OK' if d.get('success') else 'FAIL: '+str(d))"
+          fi
+          echo "::endgroup::"
+
+          echo "::group::3. Final project state"
+          curl -s -H "$AUTH" "$API" > /tmp/project_info.json
+          python3 -c "
+import sys,json
+with open('/tmp/project_info.json') as f:
+    p=json.load(f).get('result',{})
+print('production_branch:', p.get('deployment_configs',{}).get('production_branch','N/A'))
+cd=p.get('canonical_deployment',{})
+if cd:
+    print('canonical_deployment id:', cd.get('id','N/A'))
+    print('canonical_deployment url:', cd.get('url','N/A'))
+    print('canonical_deployment created:', cd.get('created_on','N/A'))
+else:
+    print('canonical_deployment: None')
+"
+          echo "::endgroup::"
