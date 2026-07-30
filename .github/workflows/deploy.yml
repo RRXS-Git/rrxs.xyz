@@ -48,69 +48,45 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist/ --project-name=rrxs-xyz --branch=main
 
-      - name: Migrate custom domain rrxs.xyz (curl only)
+      - name: Migrate custom domain rrxs.xyz (wrangler)
         run: |
           set -e
-          AUTH="Authorization: Bearer ${CF_API_TOKEN}"
-          BASE="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects"
-          TARGET="rrxs-xyz"
-          DOMAIN="rrxs.xyz"
+          LOG=/tmp/domain-migration.log
+          exec > >(tee -a "$LOG") 2>&1
 
-          echo "=== Step 1: Find which project has rrxs.xyz ==="
-          OLD_PROJ=""
-          for PROJ in $(curl -s -H "$AUTH" "${BASE}?per_page=50" | jq -r '.result[].name'); do
-            RESULT=$(curl -s -H "$AUTH" "${BASE}/${PROJ}/domains")
-            FOUND=$(echo "$RESULT" | jq -r --arg d "$DOMAIN" '.result[] | select(.name==$d) | .name')
-            echo "$PROJ: $(echo "$RESULT" | jq -c '{success, result_count: (.result | length)}')"
-            if [ -n "$FOUND" ]; then
-              OLD_PROJ="$PROJ"
-              echo "  >>> FOUND $DOMAIN on $PROJ"
-            fi
-          done
-          echo "OLD_PROJ=$OLD_PROJ"
+          echo "=== Step 1: Wrangler version ==="
+          npx wrangler --version
 
           echo ""
-          echo "=== Step 2: Delete from old project ==="
-          if [ -n "$OLD_PROJ" ] && [ "$OLD_PROJ" != "$TARGET" ]; then
-            echo "Deleting $DOMAIN from $OLD_PROJ..."
-            DEL_RESULT=$(curl -s -X DELETE -H "$AUTH" "${BASE}/${OLD_PROJ}/domains/${DOMAIN}")
-            echo "DELETE: $DEL_RESULT" | head -5
-          elif [ "$OLD_PROJ" = "$TARGET" ]; then
-            echo "Already on $TARGET, skipping delete"
-          else
-            echo "Domain not found on any project, skipping delete"
-          fi
+          echo "=== Step 2: Add custom domain via wrangler ==="
+          echo "Running: npx wrangler pages domain add rrxs.xyz --project-name=rrxs-xyz"
+          npx wrangler pages domain add rrxs.xyz --project-name=rrxs-xyz || true
 
           echo ""
-          echo "=== Step 3: Add to $TARGET ==="
-          if [ "$OLD_PROJ" != "$TARGET" ]; then
-            echo "Adding $DOMAIN to $TARGET..."
-            ADD_RESULT=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
-              -H "$AUTH" -H "Content-Type: application/json" \
-              -d "{\"name\":\"${DOMAIN}\"}" \
-              "${BASE}/${TARGET}/domains")
-            echo "POST raw output:"
-            echo "$ADD_RESULT"
-            echo ""
-            # Check if the domain was actually added
-            sleep 3
-            VERIFY=$(curl -s -H "$AUTH" "${BASE}/${TARGET}/domains" | jq -r --arg d "$DOMAIN" '.result[] | select(.name==$d) | .status')
-            echo "Domain status after POST: $VERIFY"
-          else
-            echo "Already on $TARGET, skipping add"
-          fi
+          echo "=== Step 3: Check existing custom domains ==="
+          npx wrangler pages domain list --project-name=rrxs-xyz || echo "domain list not available"
 
           echo ""
-          echo "=== Step 4: All domains on $TARGET ==="
-          curl -s -H "$AUTH" "${BASE}/${TARGET}/domains" | jq -c '.result[] | {name, status}'
+          echo "=== Step 4: Verify project details ==="
+          npx wrangler pages project list --json 2>/dev/null | python3 -c "import sys,json;[print(f'{p[\"name\"]} -> domains: {p.get(\"domains\",[])}') for p in json.load(sys.stdin)]" || echo "Project list not available"
 
-          echo ""
-          echo "=== DONE ==="
+      - name: Upload migration logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: domain-migration-logs
+          path: /tmp/domain-migration.log
+          retention-days: 1
 
       - name: Verify
         run: |
           set +e
           echo "=== rrxs.xyz ==="
           curl -sI "https://rrxs.xyz/" | head -3
+          echo ""
           echo "=== pages.dev ==="
           curl -sI "https://rrxs-xyz.pages.dev/" | head -3
+          echo ""
+          echo "=== Body compare ==="
+          echo "rrxs.xyz body size: $(curl -s 'https://rrxs.xyz/' | wc -c)"
+          echo "pages.dev body size: $(curl -s 'https://rrxs-xyz.pages.dev/' | wc -c)"
