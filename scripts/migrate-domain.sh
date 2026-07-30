@@ -17,92 +17,99 @@ api() {
   fi
 }
 
-check_success() {
-  local label="$1" resp="$2"
-  local ok; ok=$(echo "$resp" | jq -r '.success // false')
-  if [ "$ok" = "true" ]; then
-    echo "  [OK] $label"
-  else
-    echo "  [FAIL] $label — $(echo "$resp" | jq -c '.errors')"
-  fi
+# Safely extract from JSON — returns empty if jq fails or result missing
+safe_jq() {
+  local filter="$1" json="$2"
+  local result; result=$(echo "$json" | jq -r "$filter // \"\"" 2>/dev/null) || true
+  echo "$result"
 }
 
 echo "=== Step 1: List Pages projects ==="
 PROJECTS=$(api GET "${BASE}?per_page=20")
-check_success "list projects" "$PROJECTS"
-echo "$PROJECTS" | jq -r '.result[] | "  - \(.name)"'
-
+SUCCESS=$(safe_jq '.success // false' "$PROJECTS")
+echo "  API success: $SUCCESS"
+safe_jq '.result[] | "  - \(.name)"' "$PROJECTS" | while read -r line; do echo "$line"; done
 echo ""
-echo "=== Step 2: Check existing domains on all projects ==="
+
+DOMAINS=$(safe_jq '.result' "$PROJECTS")
+echo "=== Step 2: Check domains on all projects ==="
 OLD_PROJ=""
-for PROJ in $(echo "$PROJECTS" | jq -r '.result[].name'); do
+for PROJ in $(safe_jq '.result[].name // ""' "$PROJECTS"); do
+  [ -z "$PROJ" ] && continue
   DOMS=$(api GET "${BASE}/${PROJ}/domains")
-  FOUND=$(echo "$DOMS" | jq -r --arg d "$DOMAIN" '.result[] | select(.name==$d) | .name // ""')
+  FOUND=$(safe_jq --arg d "$DOMAIN" '.result[] | select(.name==$d) | .name // ""' "$DOMS")
   if [ -n "$FOUND" ]; then
-    STATUS=$(echo "$DOMS" | jq -r --arg d "$DOMAIN" '.result[] | select(.name==$d) | .status')
+    STATUS=$(safe_jq --arg d "$DOMAIN" '.result[] | select(.name==$d) | .status // "unknown"' "$DOMS")
     OLD_PROJ="$PROJ"
     echo "  >>> $DOMAIN FOUND on $PROJ (status=$STATUS)"
+  else
+    COUNT=$(safe_jq '.result | length // 0' "$DOMS")
+    echo "  $PROJ: $COUNT domains"
   fi
 done
 if [ -z "$OLD_PROJ" ]; then
-  echo "  Domain $DOMAIN not found on any Pages project"
+  echo "  Domain not found on any Pages project"
 fi
-
 echo ""
-echo "=== Step 3: Delete from old project if different ==="
+
+echo "=== Step 3: Delete from old if needed ==="
 if [ -n "$OLD_PROJ" ] && [ "$OLD_PROJ" != "$TARGET" ]; then
-  HTTP_CODE=$(api DELETE "${BASE}/${OLD_PROJ}/domains/${DOMAIN}" | python3 -c "import sys; print('deleted')" 2>/dev/null || echo "deleted")
-  echo "  DELETED from $OLD_PROJ"
+  echo "  Deleting $DOMAIN from $OLD_PROJ..."
+  api DELETE "${BASE}/${OLD_PROJ}/domains/${DOMAIN}" > /dev/null 2>&1 || true
+  echo "  Deleted"
 elif [ "$OLD_PROJ" = "$TARGET" ]; then
   echo "  Already on $TARGET — checking status..."
-  FINAL_STATUS=$(api GET "${BASE}/${TARGET}/domains" | jq -r --arg d "$DOMAIN" '.result[] | select(.name==$d) | .status // "unknown"')
+  FINAL_STATUS=$(safe_jq --arg d "$DOMAIN" '.result[] | select(.name==$d) | .status // "unknown"' "$DOMS")
   echo "  Domain status: $FINAL_STATUS"
+  if [ "$FINAL_STATUS" = "active" ]; then
+    echo "  ✅ Domain already active — nothing to do!"
+    echo "DONE"
+    exit 0
+  fi
+  echo "  Status is $FINAL_STATUS — proceeding"
 else
-  echo "  No old project — fresh add"
+  echo "  Fresh add"
 fi
-
 echo ""
-echo "=== Step 4: Add custom domain to $TARGET ==="
+
+echo "=== Step 4: Add custom domain ==="
 ADD=$(api POST "${BASE}/${TARGET}/domains" "{\"name\":\"${DOMAIN}\"}")
-check_success "POST /domains" "$ADD"
-echo "$ADD" | jq -c '{success, errors, result}'
-
-sleep 3
-
+ADD_OK=$(safe_jq '.success // false' "$ADD")
+echo "  POST /domains success: $ADD_OK"
+safe_jq '{success, errors, result}' "$ADD" | head -c 500
 echo ""
-echo "=== Step 5: Verify domain list ==="
-FINAL=$(api GET "${BASE}/${TARGET}/domains")
-echo "$FINAL" | jq -c '.result[] | {name, status}'
+sleep 3
+echo ""
 
-FOUND=$(echo "$FINAL" | jq -r --arg d "$DOMAIN" '.result[] | select(.name==$d) | .status // "missing"')
-if [ "$FOUND" = "missing" ]; then
+echo "=== Step 5: Verify ==="
+FINAL=$(api GET "${BASE}/${TARGET}/domains")
+FOUND_STATUS=$(safe_jq --arg d "$DOMAIN" '.result[] | select(.name==$d) | .status // "missing"' "$FINAL")
+echo "  Domain status: $FOUND_STATUS"
+safe_jq '.result[] | {name, status}' "$FINAL"
+
+if [ "$FOUND_STATUS" = "missing" ]; then
   echo ""
-  echo "=== Step 5b: Pages API didn't add domain — trying DNS approach ==="
+  echo "=== Step 5b: Fallback — DNS API ==="
   ZONES=$(api GET "https://api.cloudflare.com/client/v4/zones?name=${DOMAIN}")
-  ZONE_ID=$(echo "$ZONES" | jq -r '.result[0].id // ""')
-  if [ -n "$ZONE_ID" ] && [ "$ZONE_ID" != "null" ]; then
-    echo "  Found zone: $ZONE_ID"
+  ZONE_ID=$(safe_jq '.result[0].id // ""' "$ZONES")
+  if [ -n "$ZONE_ID" ]; then
+    echo "  Zone ID: $ZONE_ID"
     DNS_ADD=$(api POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records" \
       "{\"type\":\"CNAME\",\"name\":\"${DOMAIN}\",\"content\":\"${TARGET}.pages.dev\",\"ttl\":1,\"proxied\":true}")
-    check_success "DNS CNAME record" "$DNS_ADD"
-    echo "$DNS_ADD" | jq -c '{success, errors}'
+    DNS_OK=$(safe_jq '.success // false' "$DNS_ADD")
+    echo "  DNS CNAME success: $DNS_OK"
+    safe_jq '{success, errors}' "$DNS_ADD"
 
     echo "  Retrying Pages domain add..."
     RETRY=$(api POST "${BASE}/${TARGET}/domains" "{\"name\":\"${DOMAIN}\"}")
-    check_success "retry POST /domains" "$RETRY"
+    echo "  Retry: $(safe_jq '{success, errors}' "$RETRY")"
     sleep 3
-    api GET "${BASE}/${TARGET}/domains" | jq -c '.result[] | {name, status}'
+    api GET "${BASE}/${TARGET}/domains" | jq -c '.result[] | {name, status}' 2>/dev/null || echo "  (no domains)"
   else
-    echo "  ERROR: Cannot find Cloudflare zone for $DOMAIN"
+    echo "  ERROR: Cannot find zone"
   fi
-else
-  echo ""
-  echo "=== Domain successfully added! ==="
-  echo "  Status: $FOUND"
 fi
-
 echo ""
-echo "=== Step 6: Final summary ==="
-echo "Project: $TARGET"
-api GET "${BASE}/${TARGET}/domains" | jq -c '.result[] | {name, status}'
+echo "=== Step 6: Final ==="
+safe_jq '.result[] | {name, status}' "$(api GET "${BASE}/${TARGET}/domains")"
 echo "DONE"
