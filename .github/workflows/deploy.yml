@@ -28,7 +28,11 @@ jobs:
           set +e
           API="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/rrxs-xyz"
           echo "=== PATCH production_branch ==="
-          curl -s -X PATCH -H "Authorization: Bearer ${CF_API_TOKEN}"             -H "Content-Type: application/json"             -d '{"production_branch":"main"}' "$API" |             python3 -c "import sys, json; d = json.load(sys.stdin); print(json.dumps({'success': d.get('success')}))"
+          curl -s -X PATCH \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"production_branch":"main"}' "$API" | \
+            python3 -c "import sys, json; d = json.load(sys.stdin); print(json.dumps({'ok': d.get('success')}))"
 
       - name: Deploy via wrangler
         uses: cloudflare/wrangler-action@v3
@@ -40,33 +44,21 @@ jobs:
       - name: Attach custom domain rrxs.xyz
         run: |
           set +e
-          echo "=== Try adding rrxs.xyz domain to rrxs-xyz project ==="
+          echo "=== Add rrxs.xyz domain ==="
           API="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/rrxs-xyz/domains"
-          curl -s -X POST -H "Authorization: Bearer ${CF_API_TOKEN}"             -H "Content-Type: application/json"             -d '{"name":"rrxs.xyz"}' "$API" |             python3 -c "import sys,json; d=json.load(sys.stdin); print(json.dumps({'success': d.get('success'), 'result': d.get('result')}, default=str))"
+          curl -s -X POST \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"name":"rrxs.xyz"}' "$API" | \
+            python3 -c "import sys,json; d=json.load(sys.stdin); print(json.dumps({'ok':d.get('success'),'r':str(d.get('result'))}, default=str))"
 
       - name: Verify final state
         run: |
           set +e
           API="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/rrxs-xyz"
-          curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" "$API" |             python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-r = d.get('result', {})
-print('=== Project rrxs-xyz ===')
-print(json.dumps({
-  'production_branch': r.get('production_branch'),
-  'canonical_created': r.get('canonical_deployment', {}).get('created_on'),
-  'latest_created': r.get('latest_deployment', {}).get('created_on'),
-}, indent=2))
-"
-          curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" "${API}/domains" |             python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-print('=== Custom Domains ===')
-results = d.get('result', [])
-if isinstance(results, list):
-    for dom in results:
-        print(f'  {dom.get("name")} status={dom.get("status")}')
-else:
-    print(json.dumps(results, indent=2, default=str))
-"
+          echo "=== Project state ==="
+          curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" "$API" | \
+            python3 -c "import sys,json; d=json.load(sys.stdin); r=d.get('result',{}); print(json.dumps({'production_branch':r.get('production_branch'),'canonical':r.get('canonical_deployment',{}).get('created_on'),'latest':r.get('latest_deployment',{}).get('created_on')}))"
+          echo "=== Domains ==="
+          curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" "${API}/domains" | \
+            python3 -c "import sys,json; d=json.load(sys.stdin); [print(f'  {x[\"name\"]} status={x[\"status\"]}') for x in (d.get('result') or [])]"
