@@ -4,6 +4,10 @@ on:
     branches:
       - main
 
+env:
+  CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -19,10 +23,15 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      - name: DEBUG - List all Pages projects and domains
+        run: |
+          echo "### All Pages Projects" >> $GITHUB_STEP_SUMMARY
+          API="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects"
+          curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" "${API}?per_page=20" | jq '[.result[] | {name, created_on, production_branch}]' >> $GITHUB_STEP_SUMMARY
+          echo "### rrxs-xyz custom domains" >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" "${API}/rrxs-xyz/domains" | jq '.' >> $GITHUB_STEP_SUMMARY
+
       - name: Set production_branch=main
-        env:
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           API="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/rrxs-xyz"
           echo "=== PATCH production_branch=main ==="
@@ -37,11 +46,10 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist/ --project-name=rrxs-xyz --branch=main
 
-      - name: Verify deployment was promoted
-        env:
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Verify - production_branch + canonical
         run: |
           API="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/rrxs-xyz"
-          echo "=== Production branch + canonical deployment ==="
-          curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" "$API" | jq '{production_branch: .result.production_branch, canonical_created: .result.canonical_deployment.created_on, latest_created: .result.latest_deployment.created_on}'
+          echo "=== Production branch + canonical ==="
+          curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" "$API" | jq '{production_branch: .result.production_branch, canonical_created: .result.canonical_deployment.created_on, latest_created: .result.latest_deployment.created_on}' >> $GITHUB_STEP_SUMMARY
+          echo "=== Domain deployment status ===" >> $GITHUB_STEP_SUMMARY
+          curl -s -H "Authorization: Bearer ${CF_API_TOKEN}" "${API}/domains" | jq '.' >> $GITHUB_STEP_SUMMARY
