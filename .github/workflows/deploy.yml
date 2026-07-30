@@ -48,35 +48,8 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist/ --project-name=rrxs-xyz --branch=main
 
-      - name: Migrate custom domain rrxs.xyz (wrangler)
-        run: |
-          set -e
-          LOG=/tmp/domain-migration.log
-          exec > >(tee -a "$LOG") 2>&1
-
-          echo "=== Step 1: Wrangler version ==="
-          npx wrangler --version
-
-          echo ""
-          echo "=== Step 2: Add custom domain via wrangler ==="
-          echo "Running: npx wrangler pages domain add rrxs.xyz --project-name=rrxs-xyz"
-          npx wrangler pages domain add rrxs.xyz --project-name=rrxs-xyz || true
-
-          echo ""
-          echo "=== Step 3: Check existing custom domains ==="
-          npx wrangler pages domain list --project-name=rrxs-xyz || echo "domain list not available"
-
-          echo ""
-          echo "=== Step 4: Verify project details ==="
-          npx wrangler pages project list --json 2>/dev/null | python3 -c "import sys,json;[print(f'{p[\"name\"]} -> domains: {p.get(\"domains\",[])}') for p in json.load(sys.stdin)]" || echo "Project list not available"
-
-      - name: Upload migration logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: domain-migration-logs
-          path: /tmp/domain-migration.log
-          retention-days: 1
+      - name: Migrate custom domain rrxs.xyz
+        run: bash scripts/migrate-domain.sh
 
       - name: Verify
         run: |
@@ -87,6 +60,6 @@ jobs:
           echo "=== pages.dev ==="
           curl -sI "https://rrxs-xyz.pages.dev/" | head -3
           echo ""
-          echo "=== Body compare ==="
-          echo "rrxs.xyz body size: $(curl -s 'https://rrxs.xyz/' | wc -c)"
-          echo "pages.dev body size: $(curl -s 'https://rrxs-xyz.pages.dev/' | wc -c)"
+          echo "=== Body size compare ==="
+          echo "rrxs.xyz: $(curl -s 'https://rrxs.xyz/' | wc -c) bytes"
+          echo "pages.dev: $(curl -s 'https://rrxs-xyz.pages.dev/' | wc -c) bytes"
