@@ -50,7 +50,7 @@ jobs:
 
       - name: Migrate custom domain rrxs.xyz (curl only)
         run: |
-          set +e
+          set -e
           AUTH="Authorization: Bearer ${CF_API_TOKEN}"
           BASE="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects"
           TARGET="rrxs-xyz"
@@ -59,38 +59,49 @@ jobs:
           echo "=== Step 1: Find which project has rrxs.xyz ==="
           OLD_PROJ=""
           for PROJ in $(curl -s -H "$AUTH" "${BASE}?per_page=50" | jq -r '.result[].name'); do
-            FOUND=$(curl -s -H "$AUTH" "${BASE}/${PROJ}/domains" | jq -r --arg d "$DOMAIN" '.result[] | select(.name==$d) | .name')
+            RESULT=$(curl -s -H "$AUTH" "${BASE}/${PROJ}/domains")
+            FOUND=$(echo "$RESULT" | jq -r --arg d "$DOMAIN" '.result[] | select(.name==$d) | .name')
+            echo "$PROJ: $(echo "$RESULT" | jq -c '{success, result_count: (.result | length)}')"
             if [ -n "$FOUND" ]; then
               OLD_PROJ="$PROJ"
-              echo ">>> $DOMAIN found on project: $PROJ"
+              echo "  >>> FOUND $DOMAIN on $PROJ"
             fi
-            echo "  $PROJ"
           done
+          echo "OLD_PROJ=$OLD_PROJ"
 
           echo ""
           echo "=== Step 2: Delete from old project ==="
           if [ -n "$OLD_PROJ" ] && [ "$OLD_PROJ" != "$TARGET" ]; then
             echo "Deleting $DOMAIN from $OLD_PROJ..."
-            curl -s -X DELETE -H "$AUTH" "${BASE}/${OLD_PROJ}/domains/${DOMAIN}" | jq -c '{success, errors}'
+            DEL_RESULT=$(curl -s -X DELETE -H "$AUTH" "${BASE}/${OLD_PROJ}/domains/${DOMAIN}")
+            echo "DELETE: $DEL_RESULT" | head -5
           elif [ "$OLD_PROJ" = "$TARGET" ]; then
-            echo "Already on $TARGET, no delete needed"
+            echo "Already on $TARGET, skipping delete"
           else
-            echo "Not found on any project, skipping delete"
+            echo "Domain not found on any project, skipping delete"
           fi
 
           echo ""
           echo "=== Step 3: Add to $TARGET ==="
           if [ "$OLD_PROJ" != "$TARGET" ]; then
             echo "Adding $DOMAIN to $TARGET..."
-            curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+            ADD_RESULT=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
+              -H "$AUTH" -H "Content-Type: application/json" \
               -d "{\"name\":\"${DOMAIN}\"}" \
-              "${BASE}/${TARGET}/domains" | jq -c '{success, errors}'
+              "${BASE}/${TARGET}/domains")
+            echo "POST raw output:"
+            echo "$ADD_RESULT"
+            echo ""
+            # Check if the domain was actually added
+            sleep 3
+            VERIFY=$(curl -s -H "$AUTH" "${BASE}/${TARGET}/domains" | jq -r --arg d "$DOMAIN" '.result[] | select(.name==$d) | .status')
+            echo "Domain status after POST: $VERIFY"
           else
             echo "Already on $TARGET, skipping add"
           fi
 
           echo ""
-          echo "=== Step 4: Verify domains ==="
+          echo "=== Step 4: All domains on $TARGET ==="
           curl -s -H "$AUTH" "${BASE}/${TARGET}/domains" | jq -c '.result[] | {name, status}'
 
           echo ""
