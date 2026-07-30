@@ -51,6 +51,39 @@ jobs:
       - name: Migrate custom domain rrxs.xyz
         run: bash scripts/migrate-domain.sh
 
+      - name: Diagnose domain routing
+        run: |
+          set +e
+          AUTH="Authorization: Bearer ${CF_API_TOKEN}"
+          ACCT="${CF_ACCOUNT_ID}"
+          BASE="https://api.cloudflare.com/client/v4/accounts/${ACCT}/pages/projects"
+
+          echo "## 🌐 Domain Routing Diagnosis" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "### All Pages projects" >> "$GITHUB_STEP_SUMMARY"
+          curl -s -H "$AUTH" "${BASE}?per_page=20" | jq -r '.result[] | "* \(.name)"' >> "$GITHUB_STEP_SUMMARY"
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Domains on each project" >> "$GITHUB_STEP_SUMMARY"
+          for PROJ in $(curl -s -H "$AUTH" "${BASE}?per_page=20" | jq -r '.result[].name'); do
+            DOMS=$(curl -s -H "$AUTH" "${BASE}/${PROJ}/domains")
+            echo "**$PROJ**: $(echo "$DOMS" | jq -r '.result | length') domain(s)" >> "$GITHUB_STEP_SUMMARY"
+            echo "$DOMS" | jq -r '.result[] | "* \(.name) (status: \(.status))"' >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "  (none)" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Zone info" >> "$GITHUB_STEP_SUMMARY"
+          curl -s -H "$AUTH" "https://api.cloudflare.com/client/v4/zones?name=rrxs.xyz" | jq '{success: .success, result: [.result[] | {name, id, status}]}' >> "$GITHUB_STEP_SUMMARY"
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Content comparison (cache-bust)" >> "$GITHUB_STEP_SUMMARY"
+          RRXS=$(curl -s "https://rrxs.xyz/?$(date +%s)" | wc -c)
+          PDEV=$(curl -s "https://rrxs-xyz.pages.dev/?$(date +%s)" | wc -c)
+          echo "rrxs.xyz: $RRXS bytes" >> "$GITHUB_STEP_SUMMARY"
+          echo "pages.dev: $PDEV bytes" >> "$GITHUB_STEP_SUMMARY"
+          echo "Match: $([ "$RRXS" = "$PDEV" ] && echo 'YES ✅' || echo 'NO ❌')" >> "$GITHUB_STEP_SUMMARY"
+          echo "Done"
+
       - name: Verify
         run: |
           set +e
