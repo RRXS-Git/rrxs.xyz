@@ -27,7 +27,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist/ --project-name=rrxs-xyz --branch=main
 
-      - name: Promote to production via API
+      - name: Ensure production_branch=main
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -36,19 +36,19 @@ jobs:
           AUTH="Authorization: Bearer ${CF_API_TOKEN}"
           CT="Content-Type: application/json"
 
-          echo "::group::1. Ensure production_branch=main"
+          echo "::group::1. Check current production_branch"
           PROJECT=$(curl -s -H "$AUTH" "$API")
-          CURRENT_BRANCH=$(echo "$PROJECT" | jq -r '.result.deployment_configs.production_branch // "none"')
-          echo "Current production_branch: $CURRENT_BRANCH"
-          if [ "$CURRENT_BRANCH" != "main" ]; then
+          CURRENT=$(echo "$PROJECT" | jq -r '.result.production_branch // "none"')
+          echo "Current production_branch: $CURRENT"
+          if [ "$CURRENT" != "main" ]; then
             echo "Setting production_branch to main..."
-            RESULT=$(curl -s -X PATCH -H "$AUTH" -H "$CT" -d '{"deployment_configs":{"production_branch":"main"}}' "$API")
-            echo "$RESULT" | jq -c '{success: .success}'
+            RESULT=$(curl -s -X PATCH -H "$AUTH" -H "$CT" -d '{"production_branch":"main"}' "$API")
+            echo "$RESULT" | jq -c '{success: .success, errors: .errors}'
           else
-            echo "Already main - skipping PATCH"
+            echo "Already main - all good"
           fi
           echo "::endgroup::"
 
-          echo "::group::2. Show final project state"
-          curl -s -H "$AUTH" "$API" | jq '{production_branch: .result.deployment_configs.production_branch, canonical_id: .result.canonical_deployment.id, canonical_url: .result.canonical_deployment.url, canonical_created: .result.canonical_deployment.created_on}'
+          echo "::group::2. Verify final project state"
+          curl -s -H "$AUTH" "$API" | jq '{production_branch: .result.production_branch}'
           echo "::endgroup::"
