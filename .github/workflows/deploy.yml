@@ -19,36 +19,28 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      - name: Deploy via wrangler
-        uses: cloudflare/wrangler-action@v3
-        id: wrangler
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist/ --project-name=rrxs-xyz --branch=main
-
-      - name: Ensure production_branch=main
+      - name: Ensure production_branch=main (before deploy)
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           API="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/rrxs-xyz"
           AUTH="Authorization: Bearer ${CF_API_TOKEN}"
-          CT="Content-Type: application/json"
+          echo "Setting production_branch to main..."
+          curl -s -X PATCH -H "$AUTH" -H "Content-Type: application/json" \
+            -d '{"production_branch":"main"}' "$API" | jq '{success, errors}'
 
-          echo "::group::1. Check current production_branch"
-          PROJECT=$(curl -s -H "$AUTH" "$API")
-          CURRENT=$(echo "$PROJECT" | jq -r '.result.production_branch // "none"')
-          echo "Current production_branch: $CURRENT"
-          if [ "$CURRENT" != "main" ]; then
-            echo "Setting production_branch to main..."
-            RESULT=$(curl -s -X PATCH -H "$AUTH" -H "$CT" -d '{"production_branch":"main"}' "$API")
-            echo "$RESULT" | jq -c '{success: .success, errors: .errors}'
-          else
-            echo "Already main - all good"
-          fi
-          echo "::endgroup::"
+      - name: Deploy via wrangler
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist/ --project-name=rrxs-xyz --branch=main
 
-          echo "::group::2. Verify final project state"
-          curl -s -H "$AUTH" "$API" | jq '{production_branch: .result.production_branch}'
-          echo "::endgroup::"
+      - name: Verify production_branch after deploy
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          API="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/rrxs-xyz"
+          curl -s -H "$AUTH" "$API" | jq '{production_branch: .result.production_branch, latest_deployment_id: .result.latest_deployment.id, canonical_id: .result.canonical_deployment.id}'
